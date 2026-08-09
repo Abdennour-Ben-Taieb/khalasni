@@ -1,5 +1,6 @@
 import DemoLink from "@/components/DemoLink";
 import LiveDemo from "@/components/LiveDemo";
+import T from "@/components/T";
 
 const STATS = [
   {
@@ -47,7 +48,7 @@ export default function Home() {
             khlas<span className="text-chase">ni</span>
           </span>
           <DemoLink className="text-sm px-4 py-2 rounded-full bg-ivory text-ink font-medium hover:bg-white transition-colors">
-            Open the demo
+            <T k="landing.openDemo" />
           </DemoLink>
         </div>
       </header>
@@ -59,25 +60,20 @@ export default function Home() {
             Gravv · first North Africa use case
           </p>
           <h1 className="font-display text-4xl sm:text-5xl leading-[1.08] tracking-tight">
-            Khlasni chases the money,
-            <br />
-            so you don&apos;t have to.
+            <T k="landing.heroTitle" />
           </h1>
           <p className="mt-5 text-muted text-lg leading-relaxed max-w-md">
-            You&apos;re a freelancer in Tunisia. Your client is abroad. PayPal
-            won&apos;t take you. Khlasni is the agent that invoices the
-            client, nags them until they pay, and drops the money in your
-            wallet.
+            <T k="landing.heroSubtitle" />
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <DemoLink className="px-5 py-3 rounded-full bg-chase text-ink font-medium hover:brightness-110 transition">
-              Try the live demo
+              <T k="landing.tryDemo" />
             </DemoLink>
             <a
               href="#how"
               className="px-5 py-3 rounded-full border border-white/15 text-ivory hover:border-white/35 transition"
             >
-              How it works
+              <T k="landing.howItWorks" />
             </a>
           </div>
         </div>
@@ -106,7 +102,9 @@ export default function Home() {
 
       {/* How it works */}
       <section id="how" className="max-w-5xl mx-auto px-6 py-20">
-        <h2 className="font-display text-3xl">How it works</h2>
+        <h2 className="font-display text-3xl">
+          <T k="landing.howItWorks" />
+        </h2>
         <div className="mt-10 grid md:grid-cols-3 gap-8">
           {STEPS.map((s) => (
             <div key={s.n} className="border-t border-white/15 pt-4">

@@ -6,6 +6,7 @@ import Nav from "@/components/Nav";
 import RequireAuth from "@/components/RequireAuth";
 import Stamp from "@/components/Stamp";
 import Timeline from "@/components/Timeline";
+import { downloadInvoicePdf } from "@/lib/invoice-pdf";
 import { useStore } from "@/lib/store";
 
 const STATUS_LABEL = {
@@ -101,7 +102,7 @@ export default function InvoiceDetail({
                   <span className="text-3xl font-semibold">
                     {invoice.amount.toLocaleString()}
                   </span>
-                  <span className="text-sm text-ink/50 ml-1">
+                  <span className="text-sm text-ink/50 ms-1">
                     {invoice.currency}
                   </span>
                   <p className="text-xs text-ink/40 mt-0.5">
@@ -124,6 +125,15 @@ export default function InvoiceDetail({
                 </button>
               </div>
             </div>
+          </div>
+
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={() => downloadInvoicePdf(invoice)}
+              className="text-sm px-4 py-2 rounded-full border border-white/15 hover:border-white/35 transition"
+            >
+              Download PDF
+            </button>
           </div>
 
           {!isPaid && (
@@ -152,6 +162,17 @@ export default function InvoiceDetail({
                 </button>
               </div>
             </div>
+          )}
+
+          {invoice.contractText && (
+            <details className="mt-10 rounded-lg border border-white/10 bg-ink-2 px-5 py-4">
+              <summary className="cursor-pointer text-sm font-medium">
+                Contract
+              </summary>
+              <pre className="mt-3 max-h-80 overflow-y-auto whitespace-pre-wrap font-body text-xs leading-relaxed text-muted">
+                {invoice.contractText}
+              </pre>
+            </details>
           )}
 
           <div className="mt-10">

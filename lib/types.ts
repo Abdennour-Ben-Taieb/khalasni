@@ -22,6 +22,7 @@ export type Invoice = {
   dueAt: string;
   paymentLink: string;
   events: ChaseEvent[];
+  contractText?: string;
 };
 
 export type WalletBalance = {

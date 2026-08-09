@@ -39,7 +39,7 @@ export default function Ticket({ invoice }: { invoice: Invoice }) {
             <span className="text-2xl font-semibold">
               {invoice.amount.toLocaleString()}
             </span>
-            <span className="text-sm text-ink/50 ml-1">{invoice.currency}</span>
+            <span className="text-sm text-ink/50 ms-1">{invoice.currency}</span>
             <p className="text-xs text-ink/40 mt-0.5">
               ≈ {Math.round(invoice.amountTND).toLocaleString()} TND
             </p>

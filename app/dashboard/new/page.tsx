@@ -4,12 +4,25 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Nav from "@/components/Nav";
 import RequireAuth from "@/components/RequireAuth";
+import { useI18n } from "@/lib/i18n";
+import { extractPdfText, parseContractText } from "@/lib/pdf";
 import { useStore } from "@/lib/store";
 import type { Invoice } from "@/lib/types";
+
+const CURRENCY_SYMBOL: Record<Invoice["currency"], string> = {
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+};
+
+function formatMoney(amount: number, currency: Invoice["currency"]) {
+  return `${CURRENCY_SYMBOL[currency]}${amount.toLocaleString()} ${currency}`;
+}
 
 export default function NewInvoice() {
   const router = useRouter();
   const { createInvoice } = useStore();
+  const { t } = useI18n();
   const [submitting, setSubmitting] = useState(false);
 
   const [form, setForm] = useState({
@@ -21,8 +34,60 @@ export default function NewInvoice() {
     brief: "",
   });
 
+  const [contractFileName, setContractFileName] = useState<string | null>(null);
+  const [contractText, setContractText] = useState<string | null>(null);
+  const [parsingContract, setParsingContract] = useState(false);
+  const [contractSummary, setContractSummary] = useState<string | null>(null);
+  const [contractError, setContractError] = useState<string | null>(null);
+
   function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  async function handleContractFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setParsingContract(true);
+    setContractError(null);
+    setContractSummary(null);
+    setContractFileName(file.name);
+
+    try {
+      const text = await extractPdfText(file);
+      setContractText(text);
+      const extracted = parseContractText(text);
+
+      const found: string[] = [];
+      const next = { ...form };
+
+      if (!form.clientEmail.trim() && extracted.clientEmail) {
+        next.clientEmail = extracted.clientEmail;
+        found.push("client email");
+      }
+      if (!form.amount.trim() && extracted.amount != null && extracted.currency) {
+        next.amount = String(extracted.amount);
+        next.currency = extracted.currency;
+        found.push(formatMoney(extracted.amount, extracted.currency));
+      }
+      if (!form.jobTitle.trim() && extracted.jobTitle) {
+        next.jobTitle = extracted.jobTitle;
+        found.push("job title");
+      }
+
+      setForm(next);
+      setContractSummary(
+        found.length > 0
+          ? `Found: ${found.join(", ")}. Double-check before sending.`
+          : "Couldn't find anything to prefill — fill in the form manually."
+      );
+    } catch {
+      setContractText(null);
+      setContractError("Couldn't read that PDF. Try a different file or fill in the form manually.");
+    } finally {
+      setParsingContract(false);
+    }
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -37,6 +102,7 @@ export default function NewInvoice() {
         jobTitle: form.jobTitle,
         amount: Number(form.amount),
         currency: form.currency,
+        contractText: contractText ?? undefined,
       });
       router.push(`/invoice/${invoice.id}`);
     }, 900);
@@ -47,16 +113,38 @@ export default function NewInvoice() {
       <div className="flex-1">
         <Nav active="new" />
         <div className="max-w-xl mx-auto px-6 py-10">
-          <h1 className="font-display text-3xl">Forward the job</h1>
-          <p className="text-muted mt-1 text-sm">
-            Tell Khlasni who the client is and what you agreed. It builds the
-            invoice and sends the payment link right away.
-          </p>
+          <h1 className="font-display text-3xl">{t("newInvoice.title")}</h1>
+          <p className="text-muted mt-1 text-sm">{t("newInvoice.subtitle")}</p>
 
-          <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+          <div className="mt-8 rounded-md border border-dashed border-white/15 px-4 py-4">
+            <label className="block text-sm text-muted mb-1.5">
+              {t("newInvoice.contractLabel")}{" "}
+              <span className="text-muted/60">{t("newInvoice.contractHint")}</span>
+            </label>
+            <input
+              type="file"
+              accept="application/pdf"
+              onChange={handleContractFile}
+              className="block w-full text-sm text-muted file:me-3 file:rounded-md file:border-0 file:bg-ink-2 file:px-3 file:py-2 file:text-sm file:text-ivory hover:file:bg-white/10"
+            />
+            {contractFileName && !parsingContract && (
+              <p className="mt-2 text-xs text-muted">{contractFileName}</p>
+            )}
+            {parsingContract && (
+              <p className="mt-2 text-sm text-gold">Reading contract…</p>
+            )}
+            {!parsingContract && contractSummary && (
+              <p className="mt-2 text-sm text-settled">{contractSummary}</p>
+            )}
+            {!parsingContract && contractError && (
+              <p className="mt-2 text-sm text-chase">{contractError}</p>
+            )}
+          </div>
+
+          <form onSubmit={handleSubmit} className="mt-6 space-y-5">
             <div>
               <label className="block text-sm text-muted mb-1.5">
-                Client name
+                {t("newInvoice.clientName")}
               </label>
               <input
                 required
@@ -69,7 +157,7 @@ export default function NewInvoice() {
 
             <div>
               <label className="block text-sm text-muted mb-1.5">
-                Client email
+                {t("newInvoice.clientEmail")}
               </label>
               <input
                 type="email"
@@ -82,7 +170,7 @@ export default function NewInvoice() {
 
             <div>
               <label className="block text-sm text-muted mb-1.5">
-                Job title
+                {t("newInvoice.jobTitle")}
               </label>
               <input
                 required
@@ -96,7 +184,7 @@ export default function NewInvoice() {
             <div className="grid grid-cols-[1fr_auto] gap-3">
               <div>
                 <label className="block text-sm text-muted mb-1.5">
-                  Amount
+                  {t("newInvoice.amount")}
                 </label>
                 <input
                   required
@@ -110,7 +198,7 @@ export default function NewInvoice() {
               </div>
               <div>
                 <label className="block text-sm text-muted mb-1.5">
-                  Currency
+                  {t("newInvoice.currency")}
                 </label>
                 <select
                   value={form.currency}
@@ -128,7 +216,7 @@ export default function NewInvoice() {
 
             <div>
               <label className="block text-sm text-muted mb-1.5">
-                Contract or brief{" "}
+                {t("newInvoice.briefLabel")}{" "}
                 <span className="text-muted/60">(optional, paste anything)</span>
               </label>
               <textarea
@@ -145,7 +233,7 @@ export default function NewInvoice() {
               disabled={submitting}
               className="w-full rounded-full bg-chase text-ink font-medium py-3 hover:brightness-110 transition disabled:opacity-60"
             >
-              {submitting ? "Reading the job…" : "Generate invoice & send"}
+              {submitting ? "Reading the job…" : t("newInvoice.submit")}
             </button>
           </form>
         </div>

@@ -17,6 +17,17 @@ export type User = {
   id: string;
   name: string;
   email: string;
+  // Base64 data URL, stored directly in localStorage alongside everything
+  // else in this mock auth layer. Real apps upload images to object storage
+  // and store a URL instead — this only works because avatars stay small
+  // and this never has to survive outside one browser's localStorage.
+  avatar?: string;
+};
+
+type ProfileUpdate = {
+  name?: string;
+  email?: string;
+  avatar?: string;
 };
 
 type StoredUser = User & { password: string };
@@ -91,7 +102,7 @@ function genUserId() {
 }
 
 function toSession(user: StoredUser): User {
-  return { id: user.id, name: user.name, email: user.email };
+  return { id: user.id, name: user.name, email: user.email, avatar: user.avatar };
 }
 
 type Auth = {
@@ -99,6 +110,7 @@ type Auth = {
   signUp: (name: string, email: string, password: string) => AuthResult;
   logIn: (email: string, password: string) => AuthResult;
   logOut: () => void;
+  updateProfile: (updates: ProfileUpdate) => AuthResult;
 };
 
 const AuthCtx = createContext<Auth | null>(null);
@@ -146,9 +158,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     writeSession(null);
   }, []);
 
+  const updateProfile: Auth["updateProfile"] = useCallback(
+    (updates) => {
+      if (!user) {
+        return { ok: false, error: "You must be logged in." };
+      }
+      const users = loadUsers();
+      const index = users.findIndex((u) => u.id === user.id);
+      if (index === -1) {
+        return { ok: false, error: "Your account could not be found." };
+      }
+
+      const current = users[index];
+      const nextName = updates.name !== undefined ? updates.name.trim() : current.name;
+      const nextEmail =
+        updates.email !== undefined ? updates.email.trim().toLowerCase() : current.email;
+      const nextAvatar = updates.avatar !== undefined ? updates.avatar : current.avatar;
+
+      if (!nextName || !nextEmail) {
+        return { ok: false, error: "Name and email can't be empty." };
+      }
+      if (users.some((u, i) => i !== index && u.email === nextEmail)) {
+        return { ok: false, error: "An account with that email already exists." };
+      }
+
+      const updatedUser: StoredUser = {
+        ...current,
+        name: nextName,
+        email: nextEmail,
+        avatar: nextAvatar,
+      };
+      const nextUsers = [...users];
+      nextUsers[index] = updatedUser;
+      saveUsers(nextUsers);
+      writeSession(toSession(updatedUser));
+      return { ok: true };
+    },
+    [user]
+  );
+
   const value = useMemo(
-    () => ({ user, signUp, logIn, logOut }),
-    [user, signUp, logIn, logOut]
+    () => ({ user, signUp, logIn, logOut, updateProfile }),
+    [user, signUp, logIn, logOut, updateProfile]
   );
 
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;

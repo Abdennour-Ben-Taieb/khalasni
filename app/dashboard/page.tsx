@@ -4,10 +4,12 @@ import Link from "next/link";
 import Nav from "@/components/Nav";
 import RequireAuth from "@/components/RequireAuth";
 import Ticket from "@/components/Ticket";
+import { useI18n } from "@/lib/i18n";
 import { useStore } from "@/lib/store";
 
 export default function Dashboard() {
   const { invoices } = useStore();
+  const { t } = useI18n();
   const open = invoices.filter((i) => i.status !== "paid");
   const settled = invoices.filter((i) => i.status === "paid");
 
@@ -18,7 +20,7 @@ export default function Dashboard() {
         <div className="max-w-5xl mx-auto px-6 py-10">
           <div className="flex items-end justify-between">
             <div>
-              <h1 className="font-display text-3xl">Your invoices</h1>
+              <h1 className="font-display text-3xl">{t("dashboard.title")}</h1>
               <p className="text-muted mt-1 text-sm">
                 {open.length} open · {settled.length} settled
               </p>
@@ -27,14 +29,14 @@ export default function Dashboard() {
               href="/dashboard/new"
               className="text-sm px-4 py-2 rounded-full bg-chase text-ink font-medium hover:brightness-110 transition"
             >
-              + New invoice
+              + {t("nav.newInvoice")}
             </Link>
           </div>
 
           {open.length > 0 && (
             <div className="mt-8">
               <p className="text-xs uppercase tracking-widest text-muted mb-3">
-                Open
+                {t("dashboard.open")}
               </p>
               <div className="grid sm:grid-cols-2 gap-5">
                 {open.map((inv) => (
@@ -47,7 +49,7 @@ export default function Dashboard() {
           {settled.length > 0 && (
             <div className="mt-10">
               <p className="text-xs uppercase tracking-widest text-muted mb-3">
-                Settled
+                {t("dashboard.settled")}
               </p>
               <div className="grid sm:grid-cols-2 gap-5">
                 {settled.map((inv) => (

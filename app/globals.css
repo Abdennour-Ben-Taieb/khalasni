@@ -58,6 +58,13 @@ body {
   background-repeat: repeat-y;
 }
 
+/* The strip is the first flex child, so RTL flips it to the visual right —
+   move the punched dots to its own right edge so they still land on the
+   ticket's outer edge instead of the inner seam against the paper. */
+[dir="rtl"] .perf-edge {
+  background-image: radial-gradient(circle at 100% 50%, var(--ink) 5px, transparent 5.5px);
+}
+
 @keyframes stamp-in {
   0% {
     opacity: 0;

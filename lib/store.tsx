@@ -105,6 +105,7 @@ type Store = {
     jobTitle: string;
     amount: number;
     currency: Invoice["currency"];
+    contractText?: string;
   }) => Invoice;
   chase: (id: string) => void;
   markPaid: (id: string) => void;
@@ -141,6 +142,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       dueAt: new Date(Date.now() + 7 * 86400000).toISOString(),
       paymentLink: link,
       events: [],
+      contractText: input.contractText,
     };
     draft.events = [
       {
